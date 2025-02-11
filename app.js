@@ -21,13 +21,18 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Passport & Session
-app.use(session({
-  secret: process.env.SECRET_KEY, 
-  resave: false, 
-  saveUninitialized: false,
-  cookie: { secure: false, httpOnly: true, sameSite: 'Strict' }
-}));
 
+app.use(session({
+  secret: process.env.SECRET_KEY,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: false, // Change to true in production with HTTPS
+    sameSite: 'Strict',
+    maxAge: 1000 * 60 * 60 // 1 hour
+  }
+}));
 app.use(passport.initialize());
 app.use(passport.session());
 

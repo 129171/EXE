@@ -1,72 +1,85 @@
 const passport = require('passport');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { generateAccessToken, generateRefreshToken } = require('../utils/jwt');
-const jwt = require('jsonwebtoken');
 
 exports.googleAuth = passport.authenticate('google', { scope: ['profile', 'email'] });
+
 exports.getSignIn = async (req, res) => {
-  res.render('signin'); 
-}
+  res.render('signin');
+};
+
 exports.googleCallback = (req, res, next) => {
   passport.authenticate('google', async (err, user, info) => {
-    if (err || !user) return res.redirect('/error');
+    if (err) {
+      console.error("Passport error:", err);
+      return res.redirect('/error');
+    }
+    if (!user) {
+      console.error("Google authentication failed.");
+      return res.redirect('/error');
+    }
 
     try {
       const email = user.emails?.[0]?.value || user.email || user._json?.email;
-
       if (!email) {
         console.error("No email found in Google profile");
         return res.redirect('/error');
       }
 
-      // Find user by Google ID or email
+      // Find or create user
       let existingUser = await User.findOne({ $or: [{ googleId: user.id }, { email }] });
 
       if (!existingUser) {
-        // Hash the password before saving
         const hashedPassword = await bcrypt.hash('123', 10);
-
         existingUser = new User({
           googleId: user.id,
           name: user.displayName,
           email,
           password: hashedPassword
         });
-
         await existingUser.save();
       } else {
         let updated = false;
-
         if (!existingUser.googleId) {
           existingUser.googleId = user.id;
           updated = true;
         }
-
         if (!existingUser.password) {
-          // Set and hash the password if it's missing
           existingUser.password = await bcrypt.hash('123', 10);
           updated = true;
         }
-
-        if (updated) {
-          await existingUser.save();
-        }
+        if (updated) await existingUser.save();
       }
 
-      const accessToken = generateAccessToken(existingUser);
-      const refreshToken = generateRefreshToken(existingUser);
+      // Ensure session is saved properly
+      req.login(existingUser, (err) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.redirect('/error');
+        }
 
-      res.cookie('accessToken', accessToken, {
-        httpOnly: false, // Change to true in production
-        secure: false, // Change to true if using HTTPS
-        sameSite: 'Strict',
-        path: '/',
-        maxAge: 15 * 60 * 1000 // 15 minutes
-    });
-      res.cookie('refreshToken', refreshToken, { httpOnly: true, secure: false });
+        console.log("User successfully logged in:", req.user);
 
-      return res.redirect('/');
+        // Generate JWTs
+        const accessToken = generateAccessToken(existingUser);
+        const refreshToken = generateRefreshToken(existingUser);
+
+        // Set cookies
+        res.cookie('accessToken', accessToken, {
+          httpOnly: true, // Set to true for security
+          secure: false, // Change to true in production with HTTPS
+          sameSite: 'Strict',
+          maxAge: 15 * 60 * 1000 // 15 minutes
+        });
+        res.cookie('refreshToken', refreshToken, {
+          httpOnly: true,
+          secure: false
+        });
+
+        return res.redirect('/');
+      });
     } catch (error) {
       console.error("Error processing Google login:", error);
       return res.redirect('/error');
@@ -76,32 +89,37 @@ exports.googleCallback = (req, res, next) => {
 
 exports.logout = (req, res) => {
   try {
-    // Clear cookies explicitly
-    res.clearCookie('accessToken', { path: '/', httpOnly: false, secure: true, sameSite: 'Strict' });
-    res.clearCookie('refreshToken', { path: '/', httpOnly: false, secure: true, sameSite: 'Strict' });
+    console.log("Session before logout:", req.session);
+    console.log("User before logout:", req.user);
+    res.clearCookie('userData', { path: '/', httpOnly: true, secure: false, sameSite: 'Strict' });
+    // Clear JWT cookies
+    res.clearCookie('accessToken', { path: '/', httpOnly: true, sameSite: 'Lax' });
+    res.clearCookie('refreshToken', { path: '/', httpOnly: true, sameSite: 'Lax' });
 
-    // If using sessions, destroy the session
-    if (req.session) {
+    // Destroy session properly
+    req.logout((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).send("Logout failed");
+      }
+
       req.session.destroy((err) => {
         if (err) {
           console.error("Error destroying session:", err);
+          return res.status(500).send("Logout failed");
         }
-        req.logout(() => {
-          res.redirect('/');
-        });
-      });
-    } else {
-      req.logout(() => {
+
+        console.log("User logged out successfully");
+        console.log("Session after logout:", req.session);
+        console.log("User after logout:", req.user);
         res.redirect('/');
       });
-    }
+    });
   } catch (error) {
     console.error("Logout error:", error);
     res.status(500).send("Logout failed");
   }
 };
-
-
 
 // Middleware to check authentication
 exports.refreshToken = (req, res) => {
@@ -118,7 +136,7 @@ exports.refreshToken = (req, res) => {
         return res.status(403).json({ message: "Invalid refresh token" });
       }
 
-      const newAccessToken = jwt.sign({ id: decoded.id }, process.env.JWT_SECRET, { expiresIn: '15m' });
+      const newAccessToken = generateAccessToken({ id: decoded.id });
 
       res.cookie("accessToken", newAccessToken, {
         httpOnly: true,
@@ -133,4 +151,3 @@ exports.refreshToken = (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-

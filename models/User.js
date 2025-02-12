@@ -5,6 +5,7 @@ const UserSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true, required: true }, // Email is required for all users
   password: { type: String, default: null }, // Make password optional
+  is_verfied : { type: Boolean, default: false },
   is_premium: { type: Boolean, default: false },
   premium_expired_at: { type: Date, default: null },
 }, { timestamps: true }); // Automatically handles `createdAt` and `updatedAt`

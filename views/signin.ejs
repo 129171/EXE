@@ -22,13 +22,15 @@
 					</ul>
 				</div>
 				<!-- end breadcrumb -->
+				<div id="messageBox" style="display: none; padding: 10px; margin-top: 10px;"></div>
 
 				<!-- sign in -->
 				<div class="col-12">
 					<div class="sign">
 						<div class="sign__content">
+
 							<!-- authorization form -->
-							<form action="/auth/login" class="sign__form" method="POST">
+							<form action="/auth/login" class="sign__form" method="POST" id="loginForm">
 								<a href="index-2.html" class="sign__logo">
 									<img src="img/logo.svg" alt="">
 								</a>
@@ -66,6 +68,37 @@
 		</div>
 	</main>
     
-   
+    <%- include('partials/footer') %>
+	<script>
+		document.getElementById("loginForm").addEventListener("submit", async function (event) {
+			event.preventDefault(); // Prevent default form submission
+		
+			const formData = new FormData(this);
+			const jsonData = Object.fromEntries(formData.entries());
+		
+			try {
+				const response = await fetch("/auth/login", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify(jsonData),
+				});
+		
+				const data = await response.json();
+		
+				const messageBox = document.getElementById("messageBox");
+				messageBox.style.display = "block";
+				messageBox.style.color = response.ok ? "green" : "red";
+				messageBox.textContent = data.message;
+		
+				if (response.ok) {
+					setTimeout(() => {
+						window.location.href = "/"; // Redirect after success
+					}, 3000);
+				}
+			} catch (error) {
+				console.error("Error:", error);
+			}
+		});
+		</script>
 </body>
 </html>

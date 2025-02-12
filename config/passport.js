@@ -15,18 +15,28 @@ passport.use(
       try {
         console.log("Google Profile:", profile); // Debugging
 
-        let user = await User.findOne({ googleId: profile.id });
+        const email = profile.emails?.[0]?.value;
+        if (!email) {
+          return done(new Error("No email provided by Google"), null);
+        }
+
+        let user = await User.findOne({ $or: [{ googleId: profile.id }, { email }] });
 
         if (!user) {
           user = new User({
             googleId: profile.id,
             name: profile.displayName,
-            email: profile.emails[0].value,
+            email: email,
           });
 
           await user.save();
           console.log("New user saved:", user);
         } else {
+          // If user exists but has no googleId, update it
+          if (!user.googleId) {
+            user.googleId = profile.id;
+            await user.save();
+          }
           console.log("Existing user found:", user);
         }
 
@@ -38,6 +48,7 @@ passport.use(
     }
   )
 );
+
 
 passport.serializeUser((user, done) => {
   console.log("Serializing user:", user.id); // Debugging

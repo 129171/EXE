@@ -12,10 +12,5 @@ const generateRefreshToken = (user) => {
     expiresIn: '7d', // Refresh Token expires in 7 days
   });
 };
-const generateEmailToken = (user) => {
-  return jwt.sign({ id: user._id, email: user.email }, process.env.EMAIL_SECRET, { expiresIn: '1h' });
-}
-const verifyEmailToken = (token) => {
-  return jwt.verify(token, process.env.EMAIL_SECRET);
-}
-module.exports = { generateAccessToken, generateRefreshToken, generateEmailToken, verifyEmailToken };
+
+module.exports = { generateAccessToken, generateRefreshToken };

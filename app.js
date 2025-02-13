@@ -4,12 +4,13 @@ const session = require('express-session');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const path = require('path');
-const setUser = require('./middlewares/authMiddleware'); 
+const {setUser} = require('./middlewares/authMiddleware'); 
 const connectDB = require('./config/db');
 
 const authenRoutes = require('./routes/authenRoutes');
 const homeRoutes = require('./routes/homeRoutes');
 const userRoutes = require('./routes/userRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 
 dotenv.config();
 require('./config/passport');
@@ -47,7 +48,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', homeRoutes);
 app.use('/auth', authenRoutes);
 app.use('/user', userRoutes);
-
+app.use('/ai',aiRoutes)
 
 // MongoDB Connection
 connectDB();

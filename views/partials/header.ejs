@@ -6,9 +6,9 @@
 
         <nav class="header__nav"></nav>
 
-        <form action="#" class="header__search">
-            <input type="text" placeholder="Artist, track or podcast">
-            <button type="button">
+        <form action="/ai/search" class="header__search" method="POST">
+            <input type="text" name="keyword" placeholder="Artist, track or podcast">
+            <button type="submit">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path d="M21.71,20.29,18,16.61A9,9,0,1,0,16.61,18l3.68,3.68a1,1,0,0,0,1.42,0A1,1,0,0,0,21.71,20.29ZM11,18a7,7,0,1,1,7-7A7,7,0,0,1,11,18Z"/>
                 </svg>
@@ -19,7 +19,7 @@
                 </svg>
             </button>
         </form>
-
+        
         <div class="header__actions">
             <div class="header__action header__action--signin">
                 <span id="user-name" class="header__user"></span>
@@ -32,50 +32,7 @@
             </div>
         </div>
     </div>
+    <script src="/js/script.js"></script>
 </header>
 
-<script>
-    function getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
 
-    function updateUserDisplay() {
-        const userCookie = getCookie('userData'); // Assume 'userData' stores JSON string with user info
-
-        if (userCookie) {
-            try {
-                const user = JSON.parse(decodeURIComponent(userCookie));
-
-                if (user && user.name) {
-                    document.getElementById("user-name").innerText = `Welcome, ${user.name}`;
-                    document.getElementById("auth-action").href = "/auth/logout";
-                    document.getElementById("auth-action").innerHTML = `
-                        <span>Logout</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                            <path d="M21,11H11.41l2.3-2.29a1,1,0,1,0-1.42-1.42l-4,4a1,1,0,0,0-.21.33,1,1,0,0,0,0,.76,1,1,0,0,0,.21.33l4,4a1,1,0,0,0,1.42,0,1,1,0,0,0,0-1.42L11.41,13H21a1,1,0,0,0,0-2Z"/>
-                        </svg>
-                    `;
-                }
-            } catch (error) {
-                console.error("Error parsing user cookie:", error);
-            }
-        }
-    }
-
-    function refreshAccessToken() {
-        fetch('/auth/refresh-token', { method: 'POST', credentials: 'include' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.accessToken) {
-                    document.cookie = `accessToken=${data.accessToken}; path=/; secure; SameSite=Strict`;
-                }
-            })
-            .catch(error => console.error("Error refreshing token:", error));
-    }
-
-    setInterval(refreshAccessToken, 14 * 60 * 1000);
-    updateUserDisplay();
-</script>

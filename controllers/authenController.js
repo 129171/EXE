@@ -127,25 +127,36 @@ exports.logout = (req, res) => {
 
 // Middleware to check authentication
 exports.refreshToken = (req, res) => {
-  try {
-    const refreshToken = req.cookies.refreshToken;
-    if (!refreshToken) return res.status(401).redirect("/auth/sign-in");
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) return res.status(401).json({ message: "No refresh token provided" });
 
-    jwt.verify(refreshToken, process.env.REFRESH_SECRET, (err, decoded) => {
+  jwt.verify(refreshToken, process.env.REFRESH_SECRET, async (err, decoded) => {
       if (err) {
-        console.error("Refresh token expired or invalid");
-        return res.status(403).redirect("/auth/sign-in");
+          console.error("Refresh token invalid or expired");
+         return res.status(403).render('errors', { message: "Refresh token expired, please log in again" });
+
       }
 
-      const newAccessToken = generateAccessToken({ id: decoded.id });
-      res.cookie("accessToken", newAccessToken, { httpOnly: true, secure: false, sameSite: "Strict" });
+      const user = await User.findById(decoded.id);
+      if (!user) {
+          return res.status(403).json({ message: "User not found" });
+      }
 
-      res.json({ accessToken: newAccessToken });
-    });
-  } catch (error) {
-    res.status(500).redirect("/auth/sign-in");
-  }
+      const newAccessToken = generateAccessToken(user);
+
+      // Set new access token in cookie
+      res.cookie("accessToken", newAccessToken, {
+          httpOnly: true, 
+          secure: false, 
+          sameSite: "Strict",
+          maxAge: 15 * 60 * 1000 // 15 minutes
+      });
+
+      return res.json({ accessToken: newAccessToken });
+  });
 };
+
+
 
 exports.login = async (req, res) => {
   try {

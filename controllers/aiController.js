@@ -7,23 +7,38 @@ const genAI = new GoogleGenerativeAI(process.env.API_AI_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 exports.searchInDatabase = async (req, res) => {
     try {
-        const { keyword } = req.body
-        if (!keyword) return res.status(400).json({ error: "Invalid keyword" })
+        const { msg } = req.body;
+        if (!msg) return res.status(400).render('errors', { message: "Invalid keyword" });
 
-        const sounds = await Sound.find()
+
+        const sounds = await Sound.find();
 
         const prompt = `
         You are given a JSON array of sound effects. 
-        Search for sounds that match the keyword "${keyword}" in their description or tags.
+        Search for sounds that match the keyword "${msg}" in their description or tags.
         Return an array of matching objects.
         JSON Data:
         ${JSON.stringify(sounds)}
         `;
+
         const result = await model.generateContent(prompt);
         const response = result.response;
-        const filteredSounds = JSON.parse(await response.text());
-        // AI-processed JSON
 
+        // Check if the response is valid before proceeding
+        if (!response || !response.text) {
+            return res.status(200).render('airesult', { sounds: [] }); // No data, show empty results
+        }
+
+        // Handle parsing the response safely
+        let filteredSounds = [];
+        try {
+            filteredSounds = JSON.parse(await response.text());
+        } catch (parseError) {
+            console.error("Error parsing response text:", parseError);
+            return res.status(200).render('airesult', { sounds: [] }); // In case of parsing error, show empty results
+        }
+
+        // AI-processed JSON
         const mappedResults = filteredSounds.map(sound => new Sound({
             name: sound.name,
             is_premium: sound.is_premium || false,
@@ -33,38 +48,12 @@ exports.searchInDatabase = async (req, res) => {
             tag: sound.tag,
             describtion: sound.describtion
         }));
+
         console.log({ sounds: mappedResults });
         res.render('airesult', { sounds: mappedResults });
     } catch (error) {
         console.error("Search error:", error);
-        res.status(500).json({ error: "Internal Server Error" });
-    }
-}
+         return res.status(400).render('errors', { message: "Internal Server Error" });
 
-exports.chatbox = async (req, res) => {
-    const userInput = req.body.msg;
-    const file = req.file;
-    try {
-        let prompt = [userInput]
-        if (file) {
-            const fileData = fs.readFileSync(file.path)
-            const image = {
-                inlineData: {
-                    data: fileData.toString('base64'),
-                    mimeType: file.mimeType,
-                }
-            }
-            prompt.push(image)
-        }
-        const response = await model.generateContent(prompt)
-        res.send(response.response.text())
-    } catch (error) {
-        console.error("Error generating response: ",error);
-        res.status(error.status || 500).send("An error occurred while generating the response")
-    }finally { 
-        if(file) {
-            fs.unlinkSync(file.path)
-        }
-         
-        }
-}
+    }
+};

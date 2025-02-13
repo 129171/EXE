@@ -6,11 +6,11 @@ const dotenv = require('dotenv');
 const path = require('path');
 const {setUser} = require('./middlewares/authMiddleware'); 
 const connectDB = require('./config/db');
-
 const authenRoutes = require('./routes/authenRoutes');
-const homeRoutes = require('./routes/homeRoutes');
+const soundRoutes = require('./routes/soundRoutes');
 const userRoutes = require('./routes/userRoutes');
 const aiRoutes = require('./routes/aiRoutes');
+const payRoutes = require('./routes/payRoutes');
 
 dotenv.config();
 require('./config/passport');
@@ -43,18 +43,20 @@ app.use(setUser);
 app.set('view engine', 'ejs');
 app.set('views', __dirname + '/views');
 app.use(express.static(path.join(__dirname, 'public')));
-
 // Routes
-app.use('/', homeRoutes);
+app.use('/', soundRoutes);
 app.use('/auth', authenRoutes);
 app.use('/user', userRoutes);
-app.use('/ai',aiRoutes)
+app.use('/ai', aiRoutes)
+app.use('/pay', payRoutes)
 
 // MongoDB Connection
 connectDB();
 
+require('dotenv').config();
+console.log();
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}` )
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`)
 
 );

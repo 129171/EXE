@@ -1,16 +1,39 @@
-<div id="chatPage">
+<div id="chatPage" class="chatbox-container hidden">
+    <!-- Header -->
+    <div class="chat-header">
+        Chatbox
+        <button class="close-btn" onclick="closeChat()">✖</button>
+    </div>
+
+    <!-- Chat Messages -->
     <div id="chatContainer" class="chat-container"></div>
 
-<!-- Footer -->
-<div class="chat-footer">
-  <input type="text" id="text" placeholder="Ask me anything" autocomplete="off" required>
-  <input type="file" id="fileInput" style="display: none;" accept="image/*">
-  <button id="attachment">
-      <i class="fas fa-paperclip"></i>
-  </button>
-  <button id="send">
-    <i class="fas fa-location-arrow"></i>
-  </button>
+    <!-- Footer -->
+    <div class="chat-footer">
+        <form action="/ai/search" method="post">
+            <input type="text" id="text" name="msg" placeholder="Type a message..." autocomplete="off" required>
+
+        </form>
+        <button id="attachment">
+            <i class="fas fa-paperclip"></i>
+        </button>
+        <button id="send">
+            <i class="fas fa-location-arrow"></i>
+        </button>
+    </div>
 </div>
-</div>
+<button id="openChatBtn" class="chat-open-btn" onclick="openChat()">💬</button>
+<script>
+    function closeChat() {
+    const chatPage = document.getElementById("chatPage");
+    chatPage.style.display = "none";  // Hide the chatbox
+    document.getElementById("openChatBtn").style.display = "block"; // Show the open button again
+}
+    function openChat() {
+    const chatPage = document.getElementById("chatPage");
+    chatPage.style.display = "flex";  // Ensure the chatbox is visible
+    document.getElementById("openChatBtn").style.display = "none"; // Hide the open button
+}
+</script>
+
 <script src="/js/script.js"></script>

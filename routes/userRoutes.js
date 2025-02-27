@@ -7,7 +7,11 @@ const router = express.Router();
 
 
 //get user
-router.get('/user',authenticateUser, getUser);
+router.get('/profile', (req, res, next) => {
+    console.log("Cookies:", req.cookies);
+    console.log("AccessToken exists:", !!req.cookies.accessToken);
+    next();
+}, authenticateUser, getUser);
 
 
 module.exports = router;

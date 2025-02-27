@@ -1,7 +1,6 @@
 
 const express = require('express');
 const { googleAuth, googleCallback, logout, refreshToken,getSignIn, login, register, verifyEmail , getSignUp } = require('../controllers/authenController');
-const { authenticateUser } = require('../middlewares/authMiddleware');  
 const router = express.Router();
 
 router.get('/sign-in', getSignIn)
@@ -12,7 +11,7 @@ router.get('/google/callback', googleCallback);
 // Login normally
 router.post('/login', login);
 // Logout
-router.get('/logout',authenticateUser, logout);
+router.get('/logout', logout);
 //register
 router.get('/register', getSignUp);
 

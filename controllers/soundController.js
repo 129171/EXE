@@ -1,7 +1,16 @@
 const axios = require("axios");
+const User = require('../models/User');
 
 const authToken = "7jNBweQvL7xTtKzPCcGrZw6NL07Z8wflaAJiQxuN";
-
+const isUserPremium = async (req) => {
+    try {
+        const userData = JSON.parse(req.cookies.userData || '{}');
+        const user = await User.findById(userData.id)
+        return user && user.is_premium; // Assume "isPremium" is a flag in user data
+    } catch (error) {
+        return false;
+    }
+};
 const formatDuration = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);

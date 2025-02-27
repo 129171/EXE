@@ -11,6 +11,7 @@ const soundRoutes = require('./routes/soundRoutes');
 const userRoutes = require('./routes/userRoutes');
 const aiRoutes = require('./routes/aiRoutes');
 const payRoutes = require('./routes/payRoutes');
+const homeRoutes = require('./routes/homeRoutes');
 
 dotenv.config();
 require('./config/passport');
@@ -49,6 +50,7 @@ app.use('/auth', authenRoutes);
 app.use('/user', userRoutes);
 app.use('/ai', aiRoutes)
 app.use('/pay', payRoutes)
+app.use('/home', homeRoutes)
 
 // MongoDB Connection
 connectDB();

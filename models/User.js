@@ -8,6 +8,10 @@ const UserSchema = new mongoose.Schema({
   is_verfied : { type: Boolean, default: false },
   is_premium: { type: Boolean, default: false },
   premium_expired_at: { type: Date, default: null },
+  status: { type: String, enum: ['active', 'in-active'], default: 'active', required: true },
+
+  role: { type: String, enum: ['admin', 'user'], default: 'user', required: true }
+
 }, { timestamps: true }); // Automatically handles `createdAt` and `updatedAt`
 
 module.exports = mongoose.model('User', UserSchema);

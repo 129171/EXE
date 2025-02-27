@@ -64,7 +64,6 @@ exports.googleCallback = (req, res, next) => {
           return res.redirect('/error');
         }
 
-        console.log("User successfully logged in:", req.user);
 
         // Generate JWTs
         const accessToken = generateAccessToken(existingUser);
@@ -82,7 +81,12 @@ exports.googleCallback = (req, res, next) => {
           secure: false
         });
 
-        return res.redirect('/');
+        if(existingUser.role=='admin') {
+          return res.redirect('/home/admin');
+
+        } else {
+          return res.redirect('/');
+        }
       });
     } catch (error) {
       console.error("Error processing Google login:", error);
@@ -93,8 +97,7 @@ exports.googleCallback = (req, res, next) => {
 
 exports.logout = (req, res) => {
   try {
-    console.log("Session before logout:", req.session);
-    console.log("User before logout:", req.user);
+  
     res.clearCookie('userData', { path: '/', httpOnly: true, secure: false, sameSite: 'Strict' });
     // Clear JWT cookies
     res.clearCookie('accessToken', { path: '/', httpOnly: true, sameSite: 'Lax' });
@@ -113,9 +116,6 @@ exports.logout = (req, res) => {
           return res.status(500).send("Logout failed");
         }
 
-        console.log("User logged out successfully");
-        console.log("Session after logout:", req.session);
-        console.log("User after logout:", req.user);
         res.redirect('/');
       });
     });
@@ -180,8 +180,12 @@ exports.login = async (req, res) => {
 
     res.cookie("accessToken", accessToken, { httpOnly: true, sameSite: "Strict" });
     res.cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "Strict" });
+    if(user.role=='admin') {
+      return res.redirect('/home/admin');
 
-    res.json({ message: "Login successful", accessToken, refreshToken });
+    } else {
+      return res.redirect('/');
+    }
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Server error" });

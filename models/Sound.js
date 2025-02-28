@@ -1,13 +1,15 @@
 const mongoose = require('mongoose');
 
+
 const SoundSchema = new mongoose.Schema({
-    name: String,
     is_premium: { type: Boolean, default: false },
-    file_sound_url: String,
-    file_images_url: {type: String, default: null},
-    duration: Number,
-    tag : String,
-    describtion: String,
+    soundId: { type: Number, required: true, unique: true },
+    name: { type: String, required: true },
+    preview: { type: String, default: null },
+    images: { type: String, default: null },
+    duration: { type: Number, required: true },
+    tags: { type: [String] }
 }, {timestamps: true})
+
 
 module.exports = mongoose.model('Sound', SoundSchema);

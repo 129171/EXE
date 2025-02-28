@@ -50,6 +50,9 @@
                     <div class="single-item__title">
                         <h4><a href="#"><%= sound.name %></a></h4>
                         <span><a href="artist.html"><%= sound.username %></a></span>
+                        <a href="/user/fav/<%= sound._id %>" class="favorite-btn">
+                            <i class="fas fa-heart"></i>
+                        </a>
                     </div>
                     <span class="single-item__time"><%= sound.duration %></span>
                 </li>
@@ -76,6 +79,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const audio = document.getElementById("audioPlayer");
+            const audioContainer = document.querySelector(".audio-player");
             const playPauseBtn = document.getElementById("playPauseBtn");
             const progressBar = document.getElementById("progressBar");
             const currentTimeDisplay = document.getElementById("currentTime");
@@ -88,6 +92,7 @@
                     audio.src = url;
                 }
                 audio.play();
+                audioContainer.style.display = "flex";
                 playPauseBtn.textContent = "⏸";
             }
 
@@ -121,6 +126,11 @@
 
             volumeBar.addEventListener("input", () => {
                 audio.volume = volumeBar.value;
+            });
+
+
+            audio.addEventListener("ended", () => {
+                audioContainer.style.display = "none";
             });
 
             function formatTime(seconds) {

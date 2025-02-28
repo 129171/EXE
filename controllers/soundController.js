@@ -1,221 +1,95 @@
-const axios = require("axios");
 const User = require('../models/User');
+const Sound = require("../models/Sound");
 
-const authToken = "7jNBweQvL7xTtKzPCcGrZw6NL07Z8wflaAJiQxuN";
 const isUserPremium = async (req) => {
     try {
         const userData = JSON.parse(req.cookies.userData || '{}');
-        const user = await User.findById(userData.id)
-        return user && user.is_premium; // Assume "isPremium" is a flag in user data
+        const user = await User.findById(userData.id);
+        return user && user.is_premium;
     } catch (error) {
         return false;
     }
 };
+
 const formatDuration = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${minutes}:${secs < 10 ? "0" : ""}${secs}`;
 };
 
+const getSoundsByTag = async (req, res, tag, view) => {
+    try {
+        const isPremium = await isUserPremium(req);
+        const query = isPremium ? { tags: tag } : { tags: tag, is_premium: false };
+        const sounds = await Sound.find(query);
+
+        const formattedSounds = sounds.map(sound => ({
+            ...sound.toObject(),
+            duration: formatDuration(sound.duration)
+        }));
+
+        res.render(view, { sounds: formattedSounds, error: null });
+    } catch (error) {
+        console.error(`Lỗi khi lấy danh sách âm thanh (${tag}):`, error);
+        res.render(view, { sounds: [], error: "Lỗi khi lấy danh sách âm thanh" });
+    }
+};
+
+exports.getRainSound = (req, res) => getSoundsByTag(req, res, "rain", "rainSound");
+exports.getSoothingSound = (req, res) => getSoundsByTag(req, res, "soothing", "soothingSound");
+exports.getOceanSound = (req, res) => getSoundsByTag(req, res, "ocean", "oceanSound");
+exports.getPianoSound = (req, res) => getSoundsByTag(req, res, "piano", "pianoSound");
+
+exports.getSounds = async (req, res) => {
+    try {
+        const isPremium = await isUserPremium(req);
+        const query = isPremium ? {} : { is_premium: false };
+        const sounds = await Sound.find(query);
+
+        const formattedSounds = sounds.map(sound => ({
+            ...sound.toObject(),
+            duration: formatDuration(sound.duration)
+        }));
+
+        res.render("index", { sounds: formattedSounds });
+    } catch (error) {
+        console.error("Lỗi khi lấy danh sách âm thanh:", error);
+        res.render("index", { sounds: [], error: "Lỗi khi lấy danh sách âm thanh" });
+    }
+};
+
 exports.getSoundById = async (req, res) => {
     try {
-        let soundId = req.params.id;
-        let url = `https://freesound.org/apiv2/sounds/${soundId}/?token=${authToken}`;
-        let response = await axios.get(url);
-
-        res.json({ audioUrl: response.data.previews["preview-hq-mp3"] });
+        const sound = await Sound.findById(req.params.id);
+        if (!sound) {
+            return res.status(404).json({ error: "Không tìm thấy âm thanh" });
+        }
+        res.json({ audioUrl: sound.preview });
     } catch (error) {
         console.error("Lỗi khi lấy chi tiết âm thanh:", error);
         res.status(500).json({ error: "Lỗi khi phát âm thanh" });
     }
 };
 
-exports.getSoundByIdSpec = async (id) => {
+exports.updateAllSounds = async (req, res) => {
     try {
-        const url = `https://freesound.org/apiv2/sounds/${id}/?token=${authToken}`;
-        const response = await axios.get(url);
-        return response.data;
+        const result = await Sound.updateMany({ images: null }, { $set: { is_premium: true } });
+        res.json({ success: true, message: `Cập nhật thành công ${result.modifiedCount} bản ghi!` });
     } catch (error) {
-        console.error(`Lỗi khi lấy chi tiết âm thanh ID ${id}:`, error);
-        return null;
+        console.error("Lỗi cập nhật toàn bộ DB:", error);
+        res.status(500).json({ success: false, message: "Lỗi khi cập nhật toàn bộ DB!" });
     }
 };
 
-exports.getSounds = async (req, res) => {
+exports.deleteShortSounds = async (req, res) => {
     try {
-        const query = req.query.q;
-        if (!query) {
-            return res.render("index", { sounds: [], error: "Vui lòng nhập từ khóa!" });
-        }
-
-        const url = `https://freesound.org/apiv2/search/text/?query=${encodeURIComponent(query)}&filter=duration:[10 TO *]&sort=rating_desc&page_size=50&token=${authToken}`;
-        const response = await axios.get(url);
-        const soundList = response.data.results;
-
-        console.log("Dữ liệu API trả về:", response.data.results);
-
-        if (!Array.isArray(soundList) || soundList.length === 0) {
-            return res.render("index", { sounds: [], error: "Không có âm thanh nào phù hợp" });
-        }
-        // Lấy danh sách âm thanh & thêm duration
-
-            const sounds = await Promise.all(
-                soundList.map(async (sound) => {
-                    const details = await this.getSoundByIdSpec(sound.id);
-                    return {
-                        id: sound.id,
-                        name: sound.name,
-                        preview: details?.previews?.["preview-hq-mp3"] || null,
-                        duration: formatDuration(details?.duration || 0),
-                    };
-                })
-            );
-
-            res.render("index", { sounds : response.data.results, error: null });
-        
-        // console.log(sounds); 
+        const result = await Sound.deleteMany({ duration: { $lt: 10 } });
+        res.json({ 
+            message: `Đã xóa ${result.deletedCount} âm thanh có thời lượng < 10 giây.`,
+            success: true 
+        });
     } catch (error) {
-        console.error("Lỗi khi lấy danh sách âm thanh:", error);
-        res.render("index", { sounds: [], error: "Lỗi khi lấy danh sách âm thanh" });
-    }
-}; 
-
-exports.getRainSound = async (req, res) => {
-    try {
-        const url = `https://freesound.org/apiv2/search/text/?query=rain&filter=duration:[10 TO *]&token=${authToken}`;
-        const response = await axios.get(url);
-        const soundList = response.data.results;
-
-        console.log("Dữ liệu API trả về:", response.data.results);
-        // Lấy danh sách âm thanh & thêm duration
-        if (Array.isArray(soundList)) {
-            const sounds = await Promise.all(
-                soundList.map(async (sound) => {
-                    const details = await this.getSoundByIdSpec(sound.id);
-                    return {
-                        id: sound.id,
-                        name: sound.name,
-                        preview: details?.previews?.["preview-hq-mp3"] || null,
-                        duration: formatDuration(details?.duration || 0),
-                    };
-                })
-            );
-
-            res.render("rainSound", { sounds, error: null });
-        } else {
-            // Nếu không có kết quả hợp lệ, gửi thông báo lỗi
-            console.error("Dữ liệu không hợp lệ: response.data.results không phải là mảng");
-            res.render("rainSound", { sounds: [], error: "Không có âm thanh nào phù hợp" });
-        }
-        // console.log(sounds); 
-
-    } catch (error) {
-        console.error("Lỗi khi lấy danh sách âm thanh:", error);
-        res.status(500).json({ error: "Lỗi khi lấy danh sách âm thanh" });
-    }
-};
-
-exports.getSoothingSound = async (req, res) => {
-    try {
-        const url = `https://freesound.org/apiv2/search/text/?query=soothing&filter=duration:[10 TO *]&token=${authToken}`;
-        const response = await axios.get(url);
-        const soundList = response.data.results;
-
-        console.log("Dữ liệu API trả về:", response.data.results);
-        // Lấy danh sách âm thanh & thêm duration
-        if (Array.isArray(soundList)) {
-            const sounds = await Promise.all(
-                soundList.map(async (sound) => {
-                    const details = await this.getSoundByIdSpec(sound.id);
-                    return {
-                        id: sound.id,
-                        name: sound.name,
-                        preview: details?.previews?.["preview-hq-mp3"] || null,
-                        duration: formatDuration(details?.duration || 0),
-                    };
-                })
-            );
-
-            res.render("soothingSound", { sounds, error: null });
-        } else {
-            // Nếu không có kết quả hợp lệ, gửi thông báo lỗi
-            console.error("Dữ liệu không hợp lệ: response.data.results không phải là mảng");
-            res.render("soothingSound", { sounds: [], error: "Không có âm thanh nào phù hợp" });
-        }
-        // console.log(sounds); 
-
-    } catch (error) {
-        console.error("Lỗi khi lấy danh sách âm thanh:", error);
-        res.status(500).json({ error: "Lỗi khi lấy danh sách âm thanh" });
-    }
-};
-
-exports.getOceanSound = async (req, res) => {
-    try {
-        const url = `https://freesound.org/apiv2/search/text/?query=ocean&filter=duration:[10 TO *]&token=${authToken}`;
-        const response = await axios.get(url);
-        const soundList = response.data.results;
-
-        console.log("Dữ liệu API trả về:", response.data.results);
-        // Lấy danh sách âm thanh & thêm duration
-        if (Array.isArray(soundList)) {
-            const sounds = await Promise.all(
-                soundList.map(async (sound) => {
-                    const details = await this.getSoundByIdSpec(sound.id);
-                    return {
-                        id: sound.id,
-                        name: sound.name,
-                        preview: details?.previews?.["preview-hq-mp3"] || null,
-                        duration: formatDuration(details?.duration || 0),
-                    };
-                })
-            );
-
-            res.render("oceanSound", { sounds, error: null });
-        } else {
-            // Nếu không có kết quả hợp lệ, gửi thông báo lỗi
-            console.error("Dữ liệu không hợp lệ: response.data.results không phải là mảng");
-            res.render("oceanSound", { sounds: [], error: "Không có âm thanh nào phù hợp" });
-        }
-        // console.log(sounds); 
-
-    } catch (error) {
-        console.error("Lỗi khi lấy danh sách âm thanh:", error);
-        res.status(500).json({ error: "Lỗi khi lấy danh sách âm thanh" });
-    }
-};
-
-exports.getPianoSound = async (req, res) => {
-    try {
-        const url = `https://freesound.org/apiv2/search/text/?query=piano&sort=rating_desc&filter=duration:%5B10%20TO%20*%5D&page_size=50&token=${authToken}`;
-        const response = await axios.get(url);
-        const soundList = response.data.results;
-
-        console.log("Dữ liệu API trả về:", response.data.results);
-        // Lấy danh sách âm thanh & thêm duration
-        if (Array.isArray(soundList)) {
-            const sounds = await Promise.all(
-                soundList.map(async (sound) => {
-                    const details = await this.getSoundByIdSpec(sound.id);
-                    return {
-                        id: sound.id,
-                        name: sound.name,
-                        preview: details?.previews?.["preview-hq-mp3"] || null,
-                        duration: formatDuration(details?.duration || 0),
-                    };
-                })
-            );
-
-            res.render("pianoSound", { sounds, error: null });
-        } else {
-            // Nếu không có kết quả hợp lệ, gửi thông báo lỗi
-            console.error("Dữ liệu không hợp lệ: response.data.results không phải là mảng");
-            res.render("pianoSound", { sounds: [], error: "Không có âm thanh nào phù hợp" });
-        }
-        // console.log(sounds); 
-
-    } catch (error) {
-        console.error("Lỗi khi lấy danh sách âm thanh:", error);
-        res.status(500).json({ error: "Lỗi khi lấy danh sách âm thanh" });
+        console.error("Lỗi khi xóa âm thanh:", error);
+        res.status(500).json({ message: "Lỗi khi xóa âm thanh", success: false });
     }
 };

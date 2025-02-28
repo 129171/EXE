@@ -1,14 +1,14 @@
+
 <!DOCTYPE html>
 <html lang="en">
 
-<%- include('partials/header_admin'); %>
+<%- include('partials/head_admin'); %>
 
 <body class="sidebar-mini fixed">
     <div class="loader-bg">
         <div class="loader-bar"></div>
     </div>
     <div class="wrapper">
-        <%- include('partials/header'); %>
         <%- include('common/side_nav'); %>
 
         <div class="content-wrapper">
@@ -65,20 +65,18 @@
                                                 <th>Name</th>
                                                 <th>Email</th>
                                                 <th>Status</th>
-                                                <th>Action</th>
+                                           
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <% users.forEach(user => { %>
                                             <tr>
-                                                
-                                                <td><%= user.name %>
-                                                </td>
+                                                <td><%= user.name %></td>
                                                 <td><%= user.email %>
                                                     <p><i class="icofont icofont-clock-time"></i></p>
                                                 </td>
                                                 <td><%= user.status %></td>
-                                                <td></td>
+                                              
                                             </tr>
                                             <% }) %>
                                         </tbody>
@@ -104,17 +102,18 @@
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
             <script src="https://code.highcharts.com/highcharts.js"></script>
             <script>
+                // Parse sales data from server
                 const salesData = JSON.parse('<%- JSON.stringify(salesData) %>');
-
-                // Prepare data for Highcharts
-                const salesCategories = Object.keys(salesData).map(date => {
+                // Prepare data for Highcharts bar chart
+                const salesDates = Object.keys(salesData).filter(key => key.includes('-'));
+                const salesCategories = salesDates.map(date => {
                     return new Date(date).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short'
                     });
                 });
-
-                const salesValues = Object.values(salesData);
+                
+                const salesValues = salesDates.map(date => salesData[date]);
 
                 // Highcharts Sales Chart
                 Highcharts.chart('barchart', {
@@ -129,14 +128,18 @@
                     }, {
                         type: 'spline',
                         name: 'Average',
-                        data: salesValues.map(value => value / 10),
+                        data: salesValues.map(value => value / 2), // Changed divisor for more realistic average line
                         marker: { lineWidth: 2, lineColor: Highcharts.getOptions().colors[3], fillColor: 'white' }
                     }]
                 });
 
                 // Chart.js Sales Pie Chart
                 const labels = ['Completed', 'Returned', 'Cancelled'];
-                const counts = [salesData.completed, salesData.returned, salesData.cancelled];
+                const counts = [
+                    salesData.completed || 0, 
+                    salesData.returned || 0, 
+                    salesData.cancelled || 0
+                ];
 
                 new Chart("salesChart", {
                     type: "pie",
@@ -148,9 +151,11 @@
                         }]
                     },
                     options: {
-                        title: {
-                            display: true,
-                            text: "Sales Status Distribution"
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: "Sales Status Distribution"
+                            }
                         }
                     }
                 });

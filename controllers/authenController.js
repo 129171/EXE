@@ -82,7 +82,7 @@ exports.googleCallback = (req, res, next) => {
         });
 
         if(existingUser.role=='admin') {
-          return res.redirect('/home/admin');
+          return res.redirect('/admin');
 
         } else {
           return res.redirect('/');
@@ -181,7 +181,7 @@ exports.login = async (req, res) => {
     res.cookie("accessToken", accessToken, { httpOnly: true, sameSite: "Strict" });
     res.cookie("refreshToken", refreshToken, { httpOnly: true, sameSite: "Strict" });
     if(user.role=='admin') {
-      return res.redirect('/home/admin');
+      return res.redirect('/admin');
 
     } else {
       return res.redirect('/');

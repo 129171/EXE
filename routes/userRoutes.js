@@ -2,6 +2,7 @@
 const express = require('express');
 const { getUser} = require('../controllers/userController');
 const { authenticateUser } = require('../middlewares/authMiddleware'); 
+const {  addToFavorites} = require('../controllers/favoriteController');
 
 const router = express.Router();
 
@@ -13,5 +14,5 @@ router.get('/profile', (req, res, next) => {
     next();
 }, authenticateUser, getUser);
 
-
+router.get('/fav/:id', authenticateUser, addToFavorites);
 module.exports = router;

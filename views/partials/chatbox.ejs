@@ -1,27 +1,22 @@
 <div id="chatPage" class="chatbox-container hidden">
-    <!-- Header -->
     <div class="chat-header">
         Chatbox
         <button class="close-btn" onclick="closeChat()">✖</button>
     </div>
-
-    <!-- Chat Messages -->
     <div id="chatContainer" class="chat-container"></div>
 
-    <!-- Footer -->
-    <div class="chat-footer">
-        <form action="/ai/search" method="post">
-            <input type="text" id="text" name="msg" placeholder="Type a message..." autocomplete="off" required>
-
-        </form>
-        <button id="attachment">
-            <i class="fas fa-paperclip"></i>
-        </button>
-        <button id="send">
-            <i class="fas fa-location-arrow"></i>
-        </button>
-    </div>
+<!-- Footer -->
+<div class="chat-footer">
+  <input type="text" id="text" placeholder="Ask me anything" autocomplete="off" required>
+  <button id="attachment">
+      <i class="fas fa-paperclip"></i>
+  </button>
+  <button id="send">
+    <i class="fas fa-location-arrow"></i>
+  </button>
 </div>
+</div>
+<script src="/js/script.js"></script>
 <button id="openChatBtn" class="chat-open-btn" onclick="openChat()">💬</button>
 <script>
     function closeChat() {
@@ -36,4 +31,3 @@
 }
 </script>
 
-<script src="/js/script.js"></script>

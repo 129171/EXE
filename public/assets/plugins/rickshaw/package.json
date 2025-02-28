@@ -3,7 +3,8 @@
   "version": "1.6.0",
   "homepage": "http://code.shutterstock.com/rickshaw/",
   "dependencies": {
-    "d3": "^3.5.16"
+    "d3": "^3.5.16",
+    "rickshaw": "file:"
   },
   "repository": {
     "type": "git",

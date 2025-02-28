@@ -1,5 +1,5 @@
 .audio-player {
-    display: flex;
+    display: none;
     align-items: center;
     gap: 15px;
     background: #333;
